@@ -10,7 +10,10 @@
   03/31/2013  N. McBean   Initial Release- screen and piezo buzzer
   04/01/2013  N. McBean   Takes UART from the computer and displays
                             it on the OLED Display
-*********************************************************************/
+  04/01/2013  N. McBean   Takes UART from the CLOUD (e-imp) and displays
+                            it on the OLED Display O_o (matches with 
+                            UART_Basic (V1) prog. pin5 imp to pin0 arduino
+******************************************************************/
 
 /*** library includes ***/
 // OLED Display
@@ -44,7 +47,7 @@ void setup()   {
   display.clearDisplay();
   
   // initialize serial:
-  //Serial1.begin(9600);
+  Serial1.begin(19200);
   Serial.begin(9600);
   //while (!Serial) ;
   Serial.println("Welcome!");
@@ -64,14 +67,14 @@ void setup()   {
 void loop() {
   //beep();
   
-  if(Serial.available() > 0)
+  if(Serial1.available() > 0)
   {
     // get the new byte:
-    char inChar = (char)Serial.read();
+    char inChar = (char)Serial1.read();
 
     // if the incoming character is a newline, set a flag
     // so the main loop can do something about it:
-    if (inChar == '|') {
+    if (inChar == ',') {
       stringComplete = true;
     } else {
       // add it to the inputString:
@@ -98,34 +101,6 @@ void loop() {
     
     
   }
-  
-  /*
-  display.clearDisplay();
-  display.invertDisplay(false);
-  
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.println("Hello, world!");
-  
-  display.setTextColor(BLACK, WHITE); // 'inverted' text
-  display.println(3.141592);
-  
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.print("0x"); display.println(0xDEADBEEF, HEX);
-  
-  display.display();
-  delay(2000);
-  
-  display.invertDisplay(true);
-  delay(2000);
-  
-  display.clearDisplay();
-  display.invertDisplay(false);  
-  display.display();  
-  delay (2000);
-  */
 }
 
 /* Helper function, beeps 3 times */
