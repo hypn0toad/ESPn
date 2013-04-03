@@ -13,6 +13,8 @@
   04/01/2013  N. McBean   Takes UART from the CLOUD (e-imp) and displays
                             it on the OLED Display O_o (matches with 
                             UART_Basic (V1) prog. pin5 imp to pin0 arduino
+  04/02/2013  N. McBean   Added beep function. Added countown and 
+                            rectangle bar drawing
 ******************************************************************/
 
 /*** library includes ***/
@@ -36,8 +38,14 @@ Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-String inputString = "";         // a string to hold incoming data
+String inputString = "";         // a string to hold incoming data 21 chars per line, 8 lines on size1
+String oled_string = "";
 boolean stringComplete = false;  // whether the string is complete
+unsigned long last_screen_update;
+unsigned long last_communication_timestamp;
+unsigned long last_communication_age;
+int health;
+
 
 /*** initialization and setup ***/
 void setup()   {                
@@ -54,6 +62,10 @@ void setup()   {
   
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
+  oled_string.reserve(200);
+  
+  last_screen_update = 0;
+  health = 100;
   
   // init done
   display.setTextSize(1);
@@ -85,12 +97,9 @@ void loop() {
 
   // print the string when a newline arrives:
   if (stringComplete) {
-    // display it
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setCursor(0,0);
-    display.println(inputString);
-    display.display();
+    health = 100;
+    oled_string = inputString;
+    updateScreen();
     
     // maintenance for the next loop
     Serial.println(inputString); 
@@ -99,7 +108,14 @@ void loop() {
     inputString = "";
     stringComplete = false;
     
-    
+    beep();
+  }
+  
+  if(millis() > last_screen_update + 1000) {
+    if (health >= 5) {
+      health -= 5; 
+    }
+    updateScreen();
   }
 }
 
@@ -123,24 +139,18 @@ void beep() {
   delay(delayms);                    // wait for a delayms ms   
 }
 
-/*
-  SerialEvent occurs whenever a new data comes in the
- hardware serial RX.  This routine is run between each
- time loop() runs, so using delay inside loop can delay
- response.  Multiple bytes of data may be available.
- */
-void serialEvent() {
-  while (Serial.available()) {
-    // get the new byte:
-    char inChar = (char)Serial.read(); 
-    // add it to the inputString:
-    inputString += inChar;
-    // if the incoming character is a newline, set a flag
-    // so the main loop can do something about it:
-    if (inChar == '\n') {
-      stringComplete = true;
-    } 
-  }
+void updateScreen() {
+  // display it
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.println(oled_string);
+  
+  display.drawRect(5,50,118,10,WHITE);
+  
+  float width = 1.18*health;
+  display.fillRect(5,50,ceil(width),10,WHITE);
+  
+  display.display();
+  last_screen_update = millis();
 }
-
-

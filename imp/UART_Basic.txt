@@ -90,12 +90,18 @@ function pollUart()
     }
 }
 
+function watchdog() {
+imp.wakeup(5*60, watchdog);
+server.log("watchdog");
+}
+
 // This is where our program actually starts! Previous stuff was all function and variable declaration.
 // This'll configure our impee. It's name is "UartCrossAir", and it has both an input and output to be connected:
 imp.configure("UartCrossAir", [impeeInput], [impeeOutput]);
 initUart(); // Initialize the UART, called just once
 initLEDs(); // Initialize the LEDs, called just once
 pollUart(); // start the UART polling, this function continues to call itself
+watchdog();
 // From here, two main functions are at play:
 //      1. We'll be calling pollUart every 10us. If data is sent from the UART, we'll send out out of the impee.
 //      2. If data is sent into the impee, we'll jump into the set function in the InputPort.
