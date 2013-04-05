@@ -55,10 +55,10 @@ void setup()   {
   display.clearDisplay();
   
   // initialize serial:
-  Serial1.begin(19200);
-  Serial.begin(9600);
+  Serial.begin(19200);
+  //Serial.begin(9600);
   //while (!Serial) ;
-  Serial.println("Welcome!");
+  //Serial.println("Welcome!");
   
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
@@ -79,10 +79,10 @@ void setup()   {
 void loop() {
   //beep();
   
-  if(Serial1.available() > 0)
+  if(Serial.available() > 0)
   {
     // get the new byte:
-    char inChar = (char)Serial1.read();
+    char inChar = (char)Serial.read();
 
     // if the incoming character is a newline, set a flag
     // so the main loop can do something about it:
@@ -102,7 +102,7 @@ void loop() {
     updateScreen();
     
     // maintenance for the next loop
-    Serial.println(inputString); 
+    //Serial.println(inputString); 
     
     // clear the string:
     inputString = "";
