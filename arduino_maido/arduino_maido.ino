@@ -73,11 +73,20 @@ void setup()   {
   display.setCursor(0,0);
   display.println("Ello");
   display.display();
+  
+  // setup communication
+  last_communication_timestamp = 0;
 }
 
 /*** never ending main loop ***/
 void loop() {
   //beep();
+  
+//  if(millis() > last_communication_timestamp + 20000) {
+//    Serial.println("AUTOCHECK!,");
+//    beep();
+//    last_communication_timestamp = millis();  
+//  }
   
   if(Serial.available() > 0)
   {

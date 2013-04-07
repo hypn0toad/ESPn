@@ -1,13 +1,29 @@
-// Transmit data between UART and Input/OutputPorts on the impee
-// by: Jim Lindblom
-//     SparkFun Electronics
-// date: September 26, 2012
-// license: BeerWare
-//          Please use, reuse, and modify this code as you need.
-//          We hope it saves you some time, or helps you learn something!
-//          If you find it handy, and we meet some day, you can buy me a beer or iced tea in return.
-// Modified by Nate McBean 4/2/2013
-// pin 5 of the imp goes to pin 0 of the arduino (tx from imp to rx of arduino)
+/*********************************************************************
+  M. A. I. D. O. (L)
+  mechanically assisted inventive device offering love
+  
+  Written by Nate McBean for Christine Chan!
+  This is the IMP code
+  
+  Based off of "Transmit data between UART and Input/OutputPorts on 
+  the impee" by: Jim Lindblom SparkFun Electronics license: BeerWare
+  
+  PIN1- nc
+  PIN2- nc
+  PIN5- Imp Transmit (connect to Rx of arduino)
+  PIN7- Imp Receive  (connect to Tx of arduino)
+  PIN8- nc  
+  PIN9- LED Tx (on when receive from internet and tx to arduino)
+  
+  
+  Revision Log
+  Date       |Author     |Description
+  -----------|-----------|-------------------------------------------
+  09/26/2012  J. Lindblom Public code release from sparkfun
+  04/03/2013  N. McBean   Added watchdog function to prevent imp from
+                          sleeping (was sleeping after 15m)
+  04/07/2013  N. McBean   Changed to use callback instead of polling
+******************************************************************/
 
 local rxLEDToggle = 1;  // These variables keep track of rx/tx LED toggling status
 local txLEDToggle = 1;
@@ -24,6 +40,7 @@ class impeeIn extends InputPort
     function set(c)
     {
         hardware.uart57.write(c);
+        //server.log(format("Internet to Ard %s", c)); // send the character out to the server log. Optional, great for debugging
         server.show(c);
         toggleRxLED();
     }
@@ -35,7 +52,7 @@ local impeeOutput = OutputPort("UART In", "string");  // set impeeOutput as a st
 function initUart()
 {
     hardware.configure(UART_57);    // Using UART on pins 5 and 7
-    hardware.uart57.configure(19200, 8, PARITY_NONE, 1, NO_CTSRTS); // 19200 baud worked well, no parity, 1 stop bit, 8 data bits
+    hardware.uart57.configure(19200, 8, PARITY_NONE, 1, NO_CTSRTS,readserial); // 19200 baud worked well, no parity, 1 stop bit, 8 data bits
 }
 
 function initLEDs()
@@ -72,22 +89,19 @@ function toggleRxLED()
     hardware.pin9.write(rxLEDToggle);   // RX LED is on pin 9 (active-low)
 }
 
-// This is our UART polling function. We'll call it once at the beginning of the program,
-// then it calls itself every 10us. If there is data in the UART57 buffer, this will read
-// as much of it as it can, and send it out of the impee's outputPort.
-function pollUart()
+// If there is data in the UART57 buffer, this function will be called and we will
+// this will read as much of it as it can, and send it out of the impee's outputPort.
+function readserial()
 {
-    imp.wakeup(0.00001, pollUart.bindenv(this));    // schedule the next poll in 10us
-    
     local byte = hardware.uart57.read();    // read the UART buffer
-    // This will return -1 if there is no data to be read.
     while (byte != -1)  // otherwise, we keep reading until there is no data to be read.
     {
-        //  server.log(format("%c", byte)); // send the character out to the server log. Optional, great for debugging
+        server.log(format("Ard to Internet %c", byte)); // send the character out to the server log. Optional, great for debugging
         impeeOutput.set(byte);  // send the valid character out the impee's outputPort
         byte = hardware.uart57.read();  // read from the UART buffer again (not sure if it's a valid character yet)
         toggleTxLED();  // Toggle the TX LED
     }
+    
 }
 
 function watchdog() {
@@ -97,10 +111,9 @@ server.log("watchdog");
 
 // This is where our program actually starts! Previous stuff was all function and variable declaration.
 // This'll configure our impee. It's name is "UartCrossAir", and it has both an input and output to be connected:
-imp.configure("UartCrossAir", [impeeInput], [impeeOutput]);
+imp.configure("UART_MASTER", [impeeInput], [impeeOutput]);
 initUart(); // Initialize the UART, called just once
 initLEDs(); // Initialize the LEDs, called just once
-pollUart(); // start the UART polling, this function continues to call itself
 watchdog();
 // From here, two main functions are at play:
 //      1. We'll be calling pollUart every 10us. If data is sent from the UART, we'll send out out of the impee.
