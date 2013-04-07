@@ -63,6 +63,10 @@ function initLEDs()
     hardware.pin9.configure(DIGITAL_OUT_OD_PULLUP);
     hardware.pin8.write(1);
     hardware.pin9.write(1);
+    
+    // LED for wifi status
+    hardware.pin2.configure(DIGITAL_OUT_OD_PULLUP);
+    hardware.pin2.write(1);
 }
 
 // This function turns an LED on/off quickly on pin 9.
@@ -105,8 +109,22 @@ function readserial()
 }
 
 function watchdog() {
-imp.wakeup(5*60, watchdog);
-server.log("watchdog");
+  imp.wakeup(5*60, watchdog);
+  server.log("watchdog");
+}
+
+function checkWifi() {
+  // check every 23 seconds just so we don't overlap with other functions
+  imp.wakeup(23,checkWifi);
+  
+  if( imp.rssi() > -67) {
+    // wifi is good
+    hardware.pin2.write(0);
+  } else {
+    // wifi is bad
+    hardware.pin2.write(1);
+  }
+    
 }
 
 // This is where our program actually starts! Previous stuff was all function and variable declaration.
@@ -115,6 +133,7 @@ imp.configure("UART_MASTER", [impeeInput], [impeeOutput]);
 initUart(); // Initialize the UART, called just once
 initLEDs(); // Initialize the LEDs, called just once
 watchdog();
+checkWifi();
 // From here, two main functions are at play:
 //      1. We'll be calling pollUart every 10us. If data is sent from the UART, we'll send out out of the impee.
 //      2. If data is sent into the impee, we'll jump into the set function in the InputPort.

@@ -24,12 +24,13 @@
 #include <Adafruit_SSD1306.h>
 
 /*** pin definitions ***/
-#define OLED_DC     11
-#define OLED_CS     12
-#define OLED_CLK    10
-#define OLED_MOSI   9
-#define OLED_RESET  13
-#define SPEAKER_PIN 6
+#define OLED_DC         11
+#define OLED_CS         12
+#define OLED_CLK        10
+#define OLED_MOSI       9
+#define OLED_RESET      13
+#define SPEAKER_PIN     6
+#define WIFI_STATUS_PIN 5
 
 /*** global creations ***/
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
@@ -76,6 +77,10 @@ void setup()   {
   
   // setup communication
   last_communication_timestamp = 0;
+  
+  // setup wifi status pin
+  pinMode(WIFI_STATUS_PIN, INPUT);
+  digitalWrite(WIFI_STATUS_PIN, 1);
 }
 
 /*** never ending main loop ***/
@@ -149,17 +154,29 @@ void beep() {
 }
 
 void updateScreen() {
-  // display it
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  display.println(oled_string);
+  // first check wifi
+  int wifi_not_connected = digitalRead(WIFI_STATUS_PIN);
   
-  display.drawRect(5,50,118,10,WHITE);
-  
-  float width = 1.18*health;
-  display.fillRect(5,50,ceil(width),10,WHITE);
-  
+  // if wifi isn't connected print an error
+  if (wifi_not_connected) {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print("Not connected to WiFi");
+    
+  // else wifi is connected, continue!
+  } else {
+    // display it
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0,0);
+    display.println(oled_string);
+    
+    display.drawRect(5,50,118,10,WHITE);
+    
+    float width = 1.18*health;
+    display.fillRect(5,50,ceil(width),10,WHITE);
+  }
+    
   display.display();
   last_screen_update = millis();
 }
