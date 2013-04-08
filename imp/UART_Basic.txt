@@ -113,16 +113,24 @@ function watchdog() {
   server.log("watchdog");
 }
 
+// lets keep checking our wireless health. 
+// check rapidly when not connected. back off when connected
 function checkWifi() {
-  // check every 23 seconds just so we don't overlap with other functions
-  imp.wakeup(23,checkWifi);
   
+  // according to documentation, above -67dbm is good enough
+  // http://devwiki.electricimp.com/doku.php?id=electricimpapi:imp:rssi
   if( imp.rssi() > -67) {
     // wifi is good
     hardware.pin2.write(0);
+    // don't bother checking for another minute almost
+    imp.wakeup(58,checkWifi);
+    //server.log("Wifi good");
   } else {
     // wifi is bad
     hardware.pin2.write(1);
+    // check in a few seconds
+    imp.wakeup(5,checkWifi);
+    //server.log("Wifi bad");
   }
     
 }
