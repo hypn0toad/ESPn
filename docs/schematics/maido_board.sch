@@ -5191,14 +5191,14 @@ type 0309, grid 2.5 mm</description>
 <wire x1="-1.27" y1="10.16" x2="0" y2="10.16" width="0.6096" layer="94"/>
 <text x="-10.16" y="-12.7" size="1.778" layer="96">&gt;VALUE</text>
 <text x="-10.16" y="13.462" size="1.778" layer="95">&gt;NAME</text>
-<pin name="GND" x="5.08" y="-7.62" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="VIN" x="5.08" y="-5.08" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="3V3" x="5.08" y="-2.54" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="CS" x="5.08" y="0" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="RST" x="5.08" y="2.54" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="DC" x="5.08" y="5.08" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="CLK" x="5.08" y="7.62" length="middle" direction="pas" swaplevel="1" rot="R180"/>
-<pin name="DATA" x="5.08" y="10.16" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="GND" x="5.08" y="10.16" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="VIN" x="5.08" y="7.62" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="3V3" x="5.08" y="5.08" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="CS" x="5.08" y="2.54" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="RST" x="5.08" y="0" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="DC" x="5.08" y="-2.54" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="CLK" x="5.08" y="-5.08" length="middle" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="DATA" x="5.08" y="-7.62" length="middle" direction="pas" swaplevel="1" rot="R180"/>
 </symbol>
 </symbols>
 <devicesets>
@@ -5238,14 +5238,14 @@ Standard 8-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <devices>
 <device name="1X08" package="OLED_128X64">
 <connects>
-<connect gate="G$1" pin="3V3" pad="3"/>
-<connect gate="G$1" pin="CLK" pad="7"/>
-<connect gate="G$1" pin="CS" pad="4"/>
-<connect gate="G$1" pin="DATA" pad="8"/>
-<connect gate="G$1" pin="DC" pad="6"/>
-<connect gate="G$1" pin="GND" pad="1"/>
-<connect gate="G$1" pin="RST" pad="5"/>
-<connect gate="G$1" pin="VIN" pad="2"/>
+<connect gate="G$1" pin="3V3" pad="6"/>
+<connect gate="G$1" pin="CLK" pad="2"/>
+<connect gate="G$1" pin="CS" pad="5"/>
+<connect gate="G$1" pin="DATA" pad="1"/>
+<connect gate="G$1" pin="DC" pad="3"/>
+<connect gate="G$1" pin="GND" pad="8"/>
+<connect gate="G$1" pin="RST" pad="4"/>
+<connect gate="G$1" pin="VIN" pad="7"/>
 </connects>
 <technologies>
 <technology name=""/>
@@ -6442,7 +6442,6 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <part name="GND4" library="supply1" deviceset="GND" device=""/>
 <part name="GND6" library="supply1" deviceset="GND" device=""/>
 <part name="U$3" library="nate_parts" deviceset="ELECTRIC_IMP_BREAKOUT" device=""/>
-<part name="U$4" library="nate_parts" deviceset="OLED128X64" device="1X08" value="OLED_DISPLAY"/>
 <part name="LSW1" library="SparkFun-LED_Tactile_Button" deviceset="LED_TACTILE_BUTTON" device=""/>
 <part name="R2" library="adafruit" deviceset="R-US_" device="R0805" value="330"/>
 <part name="R3" library="adafruit" deviceset="R-US_" device="R0805" value="330"/>
@@ -6476,6 +6475,7 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <part name="GND9" library="supply1" deviceset="GND" device=""/>
 <part name="GND10" library="supply1" deviceset="GND" device=""/>
 <part name="GND11" library="supply1" deviceset="GND" device=""/>
+<part name="JP2" library="nate_parts" deviceset="OLED128X64" device="1X08"/>
 </parts>
 <sheets>
 <sheet>
@@ -6502,7 +6502,6 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <instance part="GND4" gate="1" x="38.1" y="139.7"/>
 <instance part="GND6" gate="1" x="109.22" y="53.34"/>
 <instance part="U$3" gate="G$1" x="30.48" y="68.58"/>
-<instance part="U$4" gate="G$1" x="182.88" y="45.72" rot="R180"/>
 <instance part="LSW1" gate="LSW" x="116.84" y="142.24"/>
 <instance part="R2" gate="G$1" x="104.14" y="116.84"/>
 <instance part="R3" gate="G$1" x="43.18" y="22.86"/>
@@ -6536,6 +6535,7 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <instance part="GND9" gate="1" x="147.32" y="114.3"/>
 <instance part="GND10" gate="1" x="124.46" y="111.76"/>
 <instance part="GND11" gate="1" x="50.8" y="5.08"/>
+<instance part="JP2" gate="G$1" x="190.5" y="45.72" rot="R180"/>
 </instances>
 <busses>
 </busses>
@@ -6619,9 +6619,9 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <wire x1="96.52" y1="121.92" x2="111.76" y2="121.92" width="0.2032" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$4" gate="G$1" pin="VIN"/>
-<wire x1="177.8" y1="50.8" x2="170.18" y2="50.8" width="0.2032" layer="91"/>
-<label x="170.18" y="50.8" size="1.778" layer="95"/>
+<wire x1="185.42" y1="38.1" x2="172.72" y2="38.1" width="0.2032" layer="91"/>
+<label x="175.26" y="38.1" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="VIN"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -6663,11 +6663,6 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <pinref part="R9" gate="G$1" pin="2"/>
 <wire x1="190.5" y1="101.6" x2="193.04" y2="101.6" width="0.2032" layer="91"/>
 <wire x1="193.04" y1="101.6" x2="193.04" y2="91.44" width="0.2032" layer="91"/>
-</segment>
-<segment>
-<pinref part="U$4" gate="G$1" pin="GND"/>
-<wire x1="177.8" y1="53.34" x2="170.18" y2="53.34" width="0.2032" layer="91"/>
-<label x="170.18" y="53.34" size="1.778" layer="95"/>
 </segment>
 <segment>
 <pinref part="U$1" gate="G$1" pin="GND2"/>
@@ -6727,56 +6722,59 @@ Standard 2-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <wire x1="48.26" y1="22.86" x2="50.8" y2="22.86" width="0.2032" layer="91"/>
 <wire x1="50.8" y1="22.86" x2="50.8" y2="10.16" width="0.2032" layer="91"/>
 </segment>
+<segment>
+<wire x1="172.72" y1="35.56" x2="185.42" y2="35.56" width="0.2032" layer="91"/>
+<label x="175.26" y="35.56" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="GND"/>
+</segment>
 </net>
 <net name="OLED_CLK" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="10"/>
 <wire x1="152.4" y1="60.96" x2="157.48" y2="60.96" width="0.2032" layer="91"/>
-<wire x1="157.48" y1="60.96" x2="157.48" y2="38.1" width="0.2032" layer="91"/>
-<pinref part="U$4" gate="G$1" pin="CLK"/>
-<wire x1="157.48" y1="38.1" x2="177.8" y2="38.1" width="0.2032" layer="91"/>
-<label x="162.56" y="38.1" size="1.778" layer="95"/>
+<wire x1="157.48" y1="60.96" x2="157.48" y2="50.8" width="0.2032" layer="91"/>
+<wire x1="157.48" y1="50.8" x2="185.42" y2="50.8" width="0.2032" layer="91"/>
+<label x="167.64" y="50.8" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="CLK"/>
 </segment>
 </net>
 <net name="OLED_DC" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="11"/>
 <wire x1="152.4" y1="63.5" x2="160.02" y2="63.5" width="0.2032" layer="91"/>
-<wire x1="160.02" y1="63.5" x2="160.02" y2="40.64" width="0.2032" layer="91"/>
-<pinref part="U$4" gate="G$1" pin="DC"/>
-<wire x1="160.02" y1="40.64" x2="177.8" y2="40.64" width="0.2032" layer="91"/>
-<label x="162.56" y="40.64" size="1.778" layer="95"/>
+<wire x1="160.02" y1="63.5" x2="160.02" y2="48.26" width="0.2032" layer="91"/>
+<wire x1="160.02" y1="48.26" x2="185.42" y2="48.26" width="0.2032" layer="91"/>
+<label x="167.64" y="48.26" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="DC"/>
 </segment>
 </net>
 <net name="OLED_RST" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="13"/>
 <wire x1="152.4" y1="68.58" x2="162.56" y2="68.58" width="0.2032" layer="91"/>
-<wire x1="162.56" y1="68.58" x2="162.56" y2="43.18" width="0.2032" layer="91"/>
-<pinref part="U$4" gate="G$1" pin="RST"/>
-<wire x1="162.56" y1="43.18" x2="177.8" y2="43.18" width="0.2032" layer="91"/>
-<label x="165.1" y="43.18" size="1.778" layer="95"/>
+<wire x1="162.56" y1="68.58" x2="162.56" y2="45.72" width="0.2032" layer="91"/>
+<wire x1="162.56" y1="45.72" x2="185.42" y2="45.72" width="0.2032" layer="91"/>
+<label x="167.64" y="45.72" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="RST"/>
 </segment>
 </net>
 <net name="OLED_DATA" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="9"/>
 <wire x1="129.54" y1="60.96" x2="129.54" y2="53.34" width="0.2032" layer="91"/>
-<wire x1="129.54" y1="53.34" x2="154.94" y2="53.34" width="0.2032" layer="91"/>
-<wire x1="154.94" y1="53.34" x2="154.94" y2="35.56" width="0.2032" layer="91"/>
-<pinref part="U$4" gate="G$1" pin="DATA"/>
-<wire x1="154.94" y1="35.56" x2="177.8" y2="35.56" width="0.2032" layer="91"/>
-<label x="162.56" y="35.56" size="1.778" layer="95"/>
+<wire x1="129.54" y1="53.34" x2="185.42" y2="53.34" width="0.2032" layer="91"/>
+<label x="167.64" y="53.34" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="DATA"/>
 </segment>
 </net>
 <net name="OLED_CS" class="0">
 <segment>
-<pinref part="U$4" gate="G$1" pin="CS"/>
-<wire x1="177.8" y1="45.72" x2="165.1" y2="45.72" width="0.2032" layer="91"/>
-<wire x1="165.1" y1="45.72" x2="165.1" y2="66.04" width="0.2032" layer="91"/>
+<wire x1="165.1" y1="43.18" x2="165.1" y2="66.04" width="0.2032" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="12"/>
 <wire x1="165.1" y1="66.04" x2="152.4" y2="66.04" width="0.2032" layer="91"/>
-<label x="167.64" y="45.72" size="1.778" layer="95"/>
+<wire x1="165.1" y1="43.18" x2="185.42" y2="43.18" width="0.2032" layer="91"/>
+<label x="167.64" y="43.18" size="1.778" layer="95"/>
+<pinref part="JP2" gate="G$1" pin="CS"/>
 </segment>
 </net>
 <net name="SW1" class="0">
