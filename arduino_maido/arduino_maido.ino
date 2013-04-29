@@ -15,6 +15,8 @@
                             UART_Basic (V1) prog. pin5 imp to pin0 arduino
   04/02/2013  N. McBean   Added beep function. Added countown and 
                             rectangle bar drawing
+  04/28/2013  N. McBean   Added specific pins for PWB. Tested board 
+                            (all good!)
 ******************************************************************/
 
 /*** library includes ***/
@@ -22,6 +24,9 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+/*** debug switches ***/
+#define DEBUG_IO       0
 
 /*** pin definitions ***/
 #define OLED_DC         11
@@ -31,6 +36,16 @@
 #define OLED_RESET      13
 #define SPEAKER_PIN     6
 #define WIFI_STATUS_PIN 5
+
+#define LED1_PIN    4
+#define LED2_PIN    7
+#define ACK_LED_PIN 8
+#define TX_BUT_PIN  2
+#define ACK_BUT_PIN 3
+#define SW1_PIN     14
+#define SW5_PIN     15
+#define SW6_PIN     16
+#define SW7_PIN     17
 
 /*** global creations ***/
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
@@ -46,6 +61,7 @@ unsigned long last_screen_update;
 unsigned long last_communication_timestamp;
 unsigned long last_communication_age;
 int health;
+boolean tempvar;
 
 
 /*** initialization and setup ***/
@@ -81,6 +97,19 @@ void setup()   {
   // setup wifi status pin
   pinMode(WIFI_STATUS_PIN, INPUT);
   digitalWrite(WIFI_STATUS_PIN, 1);
+  
+  // setup other pins
+  pinMode(LED1_PIN,    OUTPUT);
+  pinMode(LED2_PIN,    OUTPUT);
+  pinMode(ACK_LED_PIN, OUTPUT);
+  pinMode(TX_BUT_PIN,  INPUT);
+  pinMode(ACK_BUT_PIN, INPUT);
+  pinMode(SW1_PIN,     INPUT);
+  pinMode(SW5_PIN,     INPUT);
+  pinMode(SW6_PIN,     INPUT);
+  pinMode(SW7_PIN,     INPUT);  
+  
+  tempvar = true;
 }
 
 /*** never ending main loop ***/
@@ -157,8 +186,41 @@ void updateScreen() {
   // first check wifi
   int wifi_not_connected = digitalRead(WIFI_STATUS_PIN);
   
+  if( DEBUG_IO ) {
+    //  pinMode(LED1_PIN,    OUTPUT);
+    //  pinMode(LED2_PIN,    OUTPUT);
+    //  pinMode(ACK_LED_PIN, OUTPUT);
+    //  pinMode(TX_BUT_PIN,  INPUT);
+    //  pinMode(ACK_BUT_PIN, INPUT);
+    //  pinMode(SW1_PIN,     INPUT);
+    //  pinMode(SW5_PIN,     INPUT);
+    //  pinMode(SW6_PIN,     INPUT);
+    //  pinMode(SW7_PIN,     INPUT);  
+    digitalWrite(LED1_PIN, tempvar);
+    digitalWrite(LED2_PIN, tempvar);
+    tempvar = !tempvar;
+    
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print("Elapsed: ");
+    display.println(millis());
+    
+    display.print("Trig Button: ");
+    display.println(digitalRead(TX_BUT_PIN));
+    display.print("Ack Button : ");
+    display.println(digitalRead(ACK_BUT_PIN));   
+    
+    display.print("SW1: ");
+    display.println(digitalRead(SW1_PIN));
+    display.print("SW5: ");
+    display.println(digitalRead(SW5_PIN));
+    display.print("SW6: ");
+    display.println(digitalRead(SW6_PIN));
+    display.print("SW7: ");
+    display.println(digitalRead(SW7_PIN));
+  }  
   // if wifi isn't connected print an error
-  if (wifi_not_connected) {
+  else if (wifi_not_connected) {
     display.clearDisplay();
     display.setCursor(0,0);
     display.print("Not connected to WiFi");
