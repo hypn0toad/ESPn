@@ -17,6 +17,11 @@
                             rectangle bar drawing
   04/28/2013  N. McBean   Added specific pins for PWB. Tested board 
                             (all good!)
+  05/05/2013  N. McBean   Changed communication protocol, now 
+                            displays on screen when receive [], otherwise
+                            handle each character individually.
+                            Initial communication works with button press
+                            TODO: debounce? needed?
 ******************************************************************/
 
 /*** library includes ***/
@@ -26,7 +31,7 @@
 #include <Adafruit_SSD1306.h>
 
 /*** debug switches ***/
-#define DEBUG_IO       0
+String revID = "ver2013-05-04-A";
 
 /*** pin definitions ***/
 #define OLED_DC         11
@@ -61,8 +66,12 @@ unsigned long last_screen_update;
 unsigned long last_communication_timestamp;
 unsigned long last_communication_age;
 int health;
-boolean tempvar;
 
+// internal stuff
+boolean flash_led_status;
+boolean debugio;
+boolean current_identity; // 0 = c, 1 = n
+boolean receiving_message;
 
 /*** initialization and setup ***/
 void setup()   {                
@@ -84,13 +93,6 @@ void setup()   {
   last_screen_update = 0;
   health = 100;
   
-  // init done
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.println("Ello");
-  display.display();
-  
   // setup communication
   last_communication_timestamp = 0;
   
@@ -109,7 +111,35 @@ void setup()   {
   pinMode(SW6_PIN,     INPUT);
   pinMode(SW7_PIN,     INPUT);  
   
-  tempvar = true;
+  // initialize this to a value, it doesn't matter what it is
+  flash_led_status  = true;
+  // initial value is that we're not in the middle of a message.
+  receiving_message = false;
+  
+  // read some startup values
+  debugio = digitalRead(SW7_PIN);
+  current_identity = digitalRead(SW6_PIN);
+  
+  // init done
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(40,8);
+  display.println("ESPn");
+  
+  display.setTextSize(1);
+  display.setCursor(20,25);
+
+  if ( current_identity ) {
+    display.println("  Hello Nate!");     
+  } else {
+    display.println("Hello Christine!");     
+  }
+
+  display.setCursor(20,55);
+  display.println(revID);
+  display.display();
+  
+  delay(5000);
 }
 
 /*** never ending main loop ***/
@@ -126,18 +156,42 @@ void loop() {
   {
     // get the new byte:
     char inChar = (char)Serial.read();
-
-    // if the incoming character is a newline, set a flag
-    // so the main loop can do something about it:
-    if (inChar == ',') {
-      stringComplete = true;
-    } else {
-      // add it to the inputString:
-      inputString += inChar;
-    }
     
+    switch (inChar) {
+      // check for starting character
+      case '[':
+        receiving_message = true;
+        break;
+      // check for ending character
+      case  ']':
+        stringComplete    = true;
+        receiving_message = false;
+        break;
+      // any other character- advanced handle
+      default:
+        if (receiving_message) { 
+          inputString += inChar;
+        } else {
+          switch (inChar) {
+            case 's':
+               health = 100;
+               beep();
+               break; 
+          }
+        } 
+    }
   }
-
+  
+  // check for button press
+  if (digitalRead(TX_BUT_PIN)) {
+    last_communication_timestamp = millis();
+    beep();
+    Serial.print("s"); 
+  }
+  
+  
+  
+  
   // print the string when a newline arrives:
   if (stringComplete) {
     health = 100;
@@ -186,19 +240,12 @@ void updateScreen() {
   // first check wifi
   int wifi_not_connected = digitalRead(WIFI_STATUS_PIN);
   
-  if( DEBUG_IO ) {
-    //  pinMode(LED1_PIN,    OUTPUT);
-    //  pinMode(LED2_PIN,    OUTPUT);
-    //  pinMode(ACK_LED_PIN, OUTPUT);
-    //  pinMode(TX_BUT_PIN,  INPUT);
-    //  pinMode(ACK_BUT_PIN, INPUT);
-    //  pinMode(SW1_PIN,     INPUT);
-    //  pinMode(SW5_PIN,     INPUT);
-    //  pinMode(SW6_PIN,     INPUT);
-    //  pinMode(SW7_PIN,     INPUT);  
-    digitalWrite(LED1_PIN, tempvar);
-    digitalWrite(LED2_PIN, tempvar);
-    tempvar = !tempvar;
+  if( debugio ) {
+    // Blink some LEDs
+    digitalWrite(LED1_PIN, flash_led_status);
+    digitalWrite(LED2_PIN, flash_led_status);
+    digitalWrite(ACK_LED_PIN, flash_led_status);
+    flash_led_status = !flash_led_status;
     
     display.clearDisplay();
     display.setCursor(0,0);
@@ -218,19 +265,12 @@ void updateScreen() {
     display.println(digitalRead(SW6_PIN));
     display.print("SW7: ");
     display.println(digitalRead(SW7_PIN));
-  }  
-  // if wifi isn't connected print an error
-  else if (wifi_not_connected) {
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.print("Not connected to WiFi");
-    
-  // else wifi is connected, continue!
   } else {
     // display it
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0,0);
+    display.println(wifi_not_connected?"offline":"online\n");
     display.println(oled_string);
     
     display.drawRect(5,50,118,10,WHITE);
@@ -241,4 +281,15 @@ void updateScreen() {
     
   display.display();
   last_screen_update = millis();
+}
+
+void error(String message) {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.println("Fatal error");
+  display.println(message);
+  
+  // freeze the arduino so it doesn't try to do anything else
+  while (1) {}
 }

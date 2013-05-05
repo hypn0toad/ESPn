@@ -23,6 +23,7 @@
   04/03/2013  N. McBean   Added watchdog function to prevent imp from
                           sleeping (was sleeping after 15m)
   04/07/2013  N. McBean   Changed to use callback instead of polling
+  04/29/2013  N. McBean   Testing other IO for switches.
 ******************************************************************/
 
 local rxLEDToggle = 1;  // These variables keep track of rx/tx LED toggling status
@@ -42,12 +43,12 @@ class impeeIn extends InputPort
         hardware.uart57.write(c);
         //server.log(format("Internet to Ard %s", c)); // send the character out to the server log. Optional, great for debugging
         server.show(c);
-        toggleRxLED();
     }
 }
 
 local impeeInput = impeeIn();  // assign impeeIn class to the impeeInput
 local impeeOutput = OutputPort("UART In", "string");  // set impeeOutput as a string
+local sw2 = OutputPort("SW2","integer");
 
 function initUart()
 {
@@ -55,42 +56,29 @@ function initUart()
     hardware.uart57.configure(19200, 8, PARITY_NONE, 1, NO_CTSRTS,readserial); // 19200 baud worked well, no parity, 1 stop bit, 8 data bits
 }
 
-function initLEDs()
+// This function is called whenever pin8//sw2 changes state.
+function switched() {
+    local local_sw2 = hardware.pin1.read(); // Read the pin state
+    
+    sw2.set(local_sw2);           // Send it to the server
+    server.show(local_sw2?"on":"off");      // Update the user-visible label
+    server.log(local_sw2?"on":"off");
+}
+
+function initPins()
 {
-    // LEDs are on pins 8 and 9 on the imp Shield
-    // They're both active low, so writing the pin a 1 will turn the LED off
-    hardware.pin8.configure(DIGITAL_OUT_OD_PULLUP);
-    hardware.pin9.configure(DIGITAL_OUT_OD_PULLUP);
-    hardware.pin8.write(1);
-    hardware.pin9.write(1);
+//    // LEDs are on pins 8 and 9 on the imp Shield
+//    // They're both active low, so writing the pin a 1 will turn the LED off
+//    hardware.pin8.configure(DIGITAL_OUT_OD_PULLUP);
+//    hardware.pin9.configure(DIGITAL_OUT_OD_PULLUP);
+//    hardware.pin8.write(1);
+//    hardware.pin9.write(1);
     
     // LED for wifi status
     hardware.pin2.configure(DIGITAL_OUT_OD_PULLUP);
     hardware.pin2.write(1);
-}
-
-// This function turns an LED on/off quickly on pin 9.
-// It first turns the LED on, then calls itself again in 50ms to turn the LED off
-function toggleTxLED()
-{
-    txLEDToggle = txLEDToggle?0:1;    // toggle the txLEDtoggle variable
-    if (!txLEDToggle)
-    {
-        imp.wakeup(0.05, toggleTxLED.bindenv(this)); // if we're turning the LED on, set a timer to call this function again (to turn the LED off)
-    }
-    hardware.pin8.write(txLEDToggle);  // TX LED is on pin 8 (active-low)
-}
-
-// This function turns an LED on/off quickly on pin 8.
-// It first turns the LED on, then calls itself again in 50ms to turn the LED off
-function toggleRxLED()
-{
-    rxLEDToggle = rxLEDToggle?0:1;    // toggle the rxLEDtoggle variable
-    if (!rxLEDToggle)
-    {
-        imp.wakeup(0.05, toggleRxLED.bindenv(this)); // if we're turning the LED on, set a timer to call this function again (to turn the LED off)
-    }
-    hardware.pin9.write(rxLEDToggle);   // RX LED is on pin 9 (active-low)
+    
+    
 }
 
 // If there is data in the UART57 buffer, this function will be called and we will
@@ -103,7 +91,6 @@ function readserial()
         server.log(format("Ard to Internet %c", byte)); // send the character out to the server log. Optional, great for debugging
         impeeOutput.set(byte);  // send the valid character out the impee's outputPort
         byte = hardware.uart57.read();  // read from the UART buffer again (not sure if it's a valid character yet)
-        toggleTxLED();  // Toggle the TX LED
     }
     
 }
@@ -137,9 +124,13 @@ function checkWifi() {
 
 // This is where our program actually starts! Previous stuff was all function and variable declaration.
 // This'll configure our impee. It's name is "UartCrossAir", and it has both an input and output to be connected:
-imp.configure("UART_MASTER", [impeeInput], [impeeOutput]);
+imp.configure("UART_MASTER", [impeeInput], [impeeOutput, sw2]);
+
+hardware.pin1.configure(DIGITAL_IN, switched);
+switched();
+
 initUart(); // Initialize the UART, called just once
-initLEDs(); // Initialize the LEDs, called just once
+initPins();
 watchdog();
 checkWifi();
 // From here, two main functions are at play:
