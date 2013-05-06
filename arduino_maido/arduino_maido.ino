@@ -30,8 +30,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-/*** debug switches ***/
-String revID = "ver2013-05-04-A";
+/*** debug switches and settings ***/
+String revID = "ver2013-05-05-A";
+unsigned int comm_frequency     = 21; // pings the server every how many sec?
+int screen_update_freq = 1;
+
+unsigned int max_age_rx_comm = 30;
 
 /*** pin definitions ***/
 #define OLED_DC         11
@@ -63,7 +67,7 @@ String inputString = "";         // a string to hold incoming data 21 chars per 
 String oled_string = "";
 boolean stringComplete = false;  // whether the string is complete
 unsigned long last_screen_update;
-unsigned long last_communication_timestamp;
+
 unsigned long last_communication_age;
 int health;
 
@@ -72,6 +76,10 @@ boolean flash_led_status;
 boolean debugio;
 boolean current_identity; // 0 = c, 1 = n
 boolean receiving_message;
+boolean other_person_online;
+unsigned long last_communication_timestamp;
+unsigned long last_ping_tx_timestamp, last_ping_rx_timestamp;
+unsigned long this_second;
 
 /*** initialization and setup ***/
 void setup()   {                
@@ -92,9 +100,13 @@ void setup()   {
   
   last_screen_update = 0;
   health = 100;
+  this_second = 0;
   
   // setup communication
   last_communication_timestamp = 0;
+  last_ping_tx_timestamp = 0;
+  last_ping_rx_timestamp = 0;
+  other_person_online = false;
   
   // setup wifi status pin
   pinMode(WIFI_STATUS_PIN, INPUT);
@@ -143,22 +155,21 @@ void setup()   {
 }
 
 /*** never ending main loop ***/
+// this does all of the main processing, but is specially crafted so that it should hopefully take 
+// as close to zero time as possible. sure serial communication will eat up some time, but most events
+// are essentially scheduled (checking timestamps), there should not be any delays in this code
 void loop() {
-  //beep();
-  
-//  if(millis() > last_communication_timestamp + 20000) {
-//    Serial.println("AUTOCHECK!,");
-//    beep();
-//    last_communication_timestamp = millis();  
-//  }
-  
+  this_second = floor(millis()/1000);
+
+  // first see if we've received any serial communication (this would be from the IMP).
+  // this input will be decoded to see if it is part of a message, or just a command
   if(Serial.available() > 0)
   {
-    // get the new byte:
+    // get the new byte (we receive one byte/character at a time)
     char inChar = (char)Serial.read();
     
     switch (inChar) {
-      // check for starting character
+      // check for starting character (this allows plaintext to be displayed)
       case '[':
         receiving_message = true;
         break;
@@ -169,30 +180,40 @@ void loop() {
         break;
       // any other character- advanced handle
       default:
+        // if in the middle of a message, save the character
         if (receiving_message) { 
           inputString += inChar;
+        // otherwise, decode the COMMAND character
         } else {
           switch (inChar) {
-            case 's':
+            // t = trigger = someone pressed the button on the other device
+            case 't':
                health = 100;
                beep();
                break; 
+            // s = status = automatic ping from the other device
+            case 's':
+               last_ping_rx_timestamp = this_second;
+               break;
           }
         } 
     }
   }
+
+  // check if we should ping the server
+  if ((this_second > last_ping_tx_timestamp + comm_frequency) | (last_ping_tx_timestamp == 0)) {
+    Serial.print("s"); 
+    last_ping_tx_timestamp = this_second;
+  }
   
   // check for button press
   if (digitalRead(TX_BUT_PIN)) {
-    last_communication_timestamp = millis();
+    last_communication_timestamp = this_second;
     beep();
-    Serial.print("s"); 
-  }
+    Serial.print("t"); 
+  }  
   
-  
-  
-  
-  // print the string when a newline arrives:
+  // if we just received a message, handle it.
   if (stringComplete) {
     health = 100;
     oled_string = inputString;
@@ -208,11 +229,19 @@ void loop() {
     beep();
   }
   
-  if(millis() > last_screen_update + 1000) {
+  // update the OLED display once a second (meh doesn't need to be faster)
+  if(this_second > last_screen_update + screen_update_freq) {
     if (health >= 5) {
       health -= 5; 
     }
     updateScreen();
+  }
+
+  // update the OTHER PERSON PRESENT indicator
+  if ( (this_second > last_ping_rx_timestamp + max_age_rx_comm) || (last_ping_rx_timestamp == 0)) { 
+    other_person_online = false;
+  } else {
+    other_person_online = true;
   }
 }
 
@@ -236,6 +265,36 @@ void beep() {
   delay(delayms);                    // wait for a delayms ms   
 }
 
+// /* Helper function, build an age based on a timestamp */
+// String timetoage(unsigned long stamp) {
+//   unsigned long h, m, s;
+//   unsigned long diff;
+//   String age = "";
+
+//   // lets just store the difference in seconds because who really cares about MS
+//   diff = floor((millis() - stamp)/1000);
+
+//   h = floor(diff / (60*60));
+//   if( h > 0) {
+//     diff -= (h * 60 * 60);
+//     age += h;
+//     age += "h";
+//   }
+
+//   m = floor(diff / 60);
+//   if (m > 0) {
+//     diff -= (m * 60);
+//     age += m;
+//     age += "m";
+//   }
+
+//   s = diff;
+//   age += s;
+//   age += "s";
+
+//   return age;
+// }
+
 void updateScreen() {
   // first check wifi
   int wifi_not_connected = digitalRead(WIFI_STATUS_PIN);
@@ -250,7 +309,7 @@ void updateScreen() {
     display.clearDisplay();
     display.setCursor(0,0);
     display.print("Elapsed: ");
-    display.println(millis());
+    display.println(this_second);
     
     display.print("Trig Button: ");
     display.println(digitalRead(TX_BUT_PIN));
@@ -269,8 +328,35 @@ void updateScreen() {
     // display it
     display.clearDisplay();
     display.setTextSize(1);
-    display.setCursor(0,0);
-    display.println(wifi_not_connected?"offline":"online\n");
+    
+
+    // first line = wifi status
+    display.setCursor(115,0);
+    if(wifi_not_connected) {
+      display.print(":(");
+    } else if (other_person_online) {
+      display.print("XD");
+    } else {
+      display.print(":)");
+    }
+
+    display.setCursor(0,9);
+    if(other_person_online) {
+      display.print("See ");
+    } else {
+      display.print("Can't find ");
+    }
+    display.println(current_identity?"chanchan!":"maido!");
+
+
+    // second line = time since last comm
+    display.print("Last rx ");
+    display.print(this_second-last_ping_rx_timestamp);
+    display.println(" ago");
+
+    
+
+    // 4th line message if there is one
     display.println(oled_string);
     
     display.drawRect(5,50,118,10,WHITE);
@@ -280,7 +366,14 @@ void updateScreen() {
   }
     
   display.display();
-  last_screen_update = millis();
+  last_screen_update = this_second;
+
+  // not really the screen, but this is called less frequently
+  if (other_person_online) {
+    digitalWrite(ACK_LED_PIN,1);
+  } else {
+    digitalWrite(ACK_LED_PIN,0);
+  }
 }
 
 void error(String message) {
