@@ -381,8 +381,18 @@ void updateScreen() {
     
     display.drawRect(5,59,118,5,WHITE);
     
-    float width = 1.18*health;
-    //float width = 118*(max_age_rx_comm-((this_second-last_ping_rx_timestamp)/max_age_rx_comm)
+    //float width = 1.18*health;
+    float rxhealth;
+    if(last_ping_rx_timestamp==0) {
+      rxhealth = 0;
+    } else {
+      float rxdiff, rxmax, rxdiv;
+      rxdiff = this_second-last_ping_rx_timestamp;
+      rxmax  = max_age_rx_comm;
+      rxdiv = rxdiff/rxmax;
+      rxhealth = 118 * (1-rxdiv);
+    }
+    float width = rxhealth;
     display.fillRect(5,59,ceil(width),5,WHITE);
   }
     
