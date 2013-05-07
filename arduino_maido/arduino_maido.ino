@@ -22,6 +22,12 @@
                             handle each character individually.
                             Initial communication works with button press
                             TODO: debounce? needed?
+  05/06/2013  N. McBean   Changed string management to be char arrays.
+                             i think my memory was getting garbage collected
+                             and all messed up! boo! This works mostly though
+                             bug- strings cant start with numbers. imp issue?
+                             Also have LED indicator for long time since tx
+                             Also have on screen reflection of ages.              
 ******************************************************************/
 
 /*** library includes ***/
@@ -31,11 +37,11 @@
 #include <Adafruit_SSD1306.h>
 
 /*** debug switches and settings ***/
-String revID = "ver2013-05-05-A";
-unsigned int comm_frequency     = 21; // pings the server every how many sec?
-int screen_update_freq = 1;
-
-unsigned int max_age_rx_comm = 30;
+String revID = "ver2013-05-06-A";
+int  comm_frequency          = 21;    // how frequently we should ping the other device
+int  screen_update_freq      = 1;     // how frequently should we update the screen
+int  max_age_rx_comm         = 30;    // LED turns off when comm > this timeout
+long age_for_low_tx          = 43200; // 12 hours since tx? complain!
 
 /*** pin definitions ***/
 #define OLED_DC         11
@@ -63,12 +69,10 @@ Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-String inputString = "";         // a string to hold incoming data 21 chars per line, 8 lines on size1
-String oled_string = "";
 boolean stringComplete = false;  // whether the string is complete
 unsigned long last_screen_update;
 
-unsigned long last_communication_age;
+
 int health;
 
 // internal stuff
@@ -77,9 +81,12 @@ boolean debugio;
 boolean current_identity; // 0 = c, 1 = n
 boolean receiving_message;
 boolean other_person_online;
-unsigned long last_communication_timestamp;
+unsigned long last_tx_timestamp,      last_rx_timestamp;
 unsigned long last_ping_tx_timestamp, last_ping_rx_timestamp;
 unsigned long this_second;
+char inputString[42];         // a string to hold incoming data 21 chars per line, 8 lines on size1
+char oled_string[42];
+int  inputString_index;
 
 /*** initialization and setup ***/
 void setup()   {                
@@ -95,15 +102,15 @@ void setup()   {
   //Serial.println("Welcome!");
   
   // reserve 200 bytes for the inputString:
-  inputString.reserve(200);
-  oled_string.reserve(200);
+  inputString_index =0;
   
   last_screen_update = 0;
   health = 100;
   this_second = 0;
   
   // setup communication
-  last_communication_timestamp = 0;
+  last_tx_timestamp = 0;
+  last_rx_timestamp = 0;
   last_ping_tx_timestamp = 0;
   last_ping_rx_timestamp = 0;
   other_person_online = false;
@@ -182,13 +189,15 @@ void loop() {
       default:
         // if in the middle of a message, save the character
         if (receiving_message) { 
-          inputString += inChar;
+          inputString[inputString_index] = inChar;
+          inputString_index++;
         // otherwise, decode the COMMAND character
         } else {
           switch (inChar) {
             // t = trigger = someone pressed the button on the other device
             case 't':
                health = 100;
+               last_rx_timestamp = this_second;
                beep();
                break; 
             // s = status = automatic ping from the other device
@@ -208,7 +217,7 @@ void loop() {
   
   // check for button press
   if (digitalRead(TX_BUT_PIN)) {
-    last_communication_timestamp = this_second;
+    last_tx_timestamp = this_second;
     beep();
     Serial.print("t"); 
   }  
@@ -216,14 +225,18 @@ void loop() {
   // if we just received a message, handle it.
   if (stringComplete) {
     health = 100;
-    oled_string = inputString;
+    for(int i = 0 ; i < inputString_index; i++) {
+      oled_string[i] = inputString[i];
+    }
+    oled_string[inputString_index] = '\0';
+
     updateScreen();
     
     // maintenance for the next loop
     //Serial.println(inputString); 
     
     // clear the string:
-    inputString = "";
+    inputString_index = 0;
     stringComplete = false;
     
     beep();
@@ -265,35 +278,36 @@ void beep() {
   delay(delayms);                    // wait for a delayms ms   
 }
 
-// /* Helper function, build an age based on a timestamp */
-// String timetoage(unsigned long stamp) {
-//   unsigned long h, m, s;
-//   unsigned long diff;
-//   String age = "";
+/* Helper function, build an age based on a timestamp */
+String timetoage(unsigned long stamp) {
+  unsigned long h, m, s;
+  unsigned long diff;
+  String age = "";
+  int len = 0;
 
-//   // lets just store the difference in seconds because who really cares about MS
-//   diff = floor((millis() - stamp)/1000);
+  // lets just store the difference in seconds because who really cares about MS
+  diff = floor((millis() - stamp)/1000);
 
-//   h = floor(diff / (60*60));
-//   if( h > 0) {
-//     diff -= (h * 60 * 60);
-//     age += h;
-//     age += "h";
-//   }
+  h = floor(diff / (60*60));
+  if( h > 0) {
+    diff -= (h * 60 * 60);
+    age += h;
+    age += "h";
+  }
 
-//   m = floor(diff / 60);
-//   if (m > 0) {
-//     diff -= (m * 60);
-//     age += m;
-//     age += "m";
-//   }
+  m = floor(diff / 60);
+  if (m > 0) {
+    diff -= (m * 60);
+    age += m;
+    age += "m";
+  }
 
-//   s = diff;
-//   age += s;
-//   age += "s";
+  s = diff;
+  age += s;
+  age += "s";
 
-//   return age;
-// }
+  return age;
+}
 
 void updateScreen() {
   // first check wifi
@@ -340,29 +354,36 @@ void updateScreen() {
       display.print(":)");
     }
 
+    // second line = last saw / can't find other person!
     display.setCursor(0,9);
-    if(other_person_online) {
-      display.print("See ");
-    } else {
+    if(last_ping_rx_timestamp == 0) {
       display.print("Can't find ");
+      display.println(current_identity?"chanchan!":"maido!");
+    } else {
+      display.print("Saw ");
+      display.print(current_identity?"her ":"him ");
+      display.print(this_second-last_ping_rx_timestamp);
+      display.println("s ago!");
+    } 
+
+    // third line = love age
+    if(last_rx_timestamp == 0) {
+      display.println("");
+    } else {
+      //               0123456789012345678901
+      display.print("Last rx ");
+      display.print(this_second-last_rx_timestamp);
+      display.println("s ago");
     }
-    display.println(current_identity?"chanchan!":"maido!");
-
-
-    // second line = time since last comm
-    display.print("Last rx ");
-    display.print(this_second-last_ping_rx_timestamp);
-    display.println(" ago");
-
-    
 
     // 4th line message if there is one
     display.println(oled_string);
     
-    display.drawRect(5,50,118,10,WHITE);
+    display.drawRect(5,59,118,5,WHITE);
     
     float width = 1.18*health;
-    display.fillRect(5,50,ceil(width),10,WHITE);
+    //float width = 118*(max_age_rx_comm-((this_second-last_ping_rx_timestamp)/max_age_rx_comm)
+    display.fillRect(5,59,ceil(width),5,WHITE);
   }
     
   display.display();
@@ -373,6 +394,14 @@ void updateScreen() {
     digitalWrite(ACK_LED_PIN,1);
   } else {
     digitalWrite(ACK_LED_PIN,0);
+  }
+
+  if (last_tx_timestamp == 0 || this_second > (last_tx_timestamp + age_for_low_tx)){
+    digitalWrite(LED2_PIN,1);
+    digitalWrite(LED1_PIN,0);
+  } else{
+    digitalWrite(LED2_PIN,0);
+    digitalWrite(LED1_PIN,1);
   }
 }
 
