@@ -27,7 +27,9 @@
                              and all messed up! boo! This works mostly though
                              bug- strings cant start with numbers. imp issue?
                              Also have LED indicator for long time since tx
-                             Also have on screen reflection of ages.              
+                             Also have on screen reflection of ages. 
+  05/07/2013  N. McBean   Changed LED1 & LED2 to display happy/stingy.
+
 ******************************************************************/
 
 /*** library includes ***/
@@ -41,7 +43,9 @@ String revID = "ver2013-05-06-A";
 int  comm_frequency          = 21;    // how frequently we should ping the other device
 int  screen_update_freq      = 1;     // how frequently should we update the screen
 int  max_age_rx_comm         = 30;    // LED turns off when comm > this timeout
-long age_for_low_tx          = 43200; // 12 hours since tx? complain!
+long age_for_low_tx          = 43200; // 12 hours since tx? complain!43200
+long age_for_low_rx          = 43200; // 12 hours since rx? ensadden!
+
 
 /*** pin definitions ***/
 #define OLED_DC         11
@@ -72,8 +76,57 @@ Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 boolean stringComplete = false;  // whether the string is complete
 unsigned long last_screen_update;
 
+// // internal messages
+// int msg_class; // 1 = high, 2 = med, 3 = low, 4 = alone, 5 = stingy
+// int msg_index;
+// int msg_health_high_len = 7;
+// char* msg_health_high[]={
+//   "Feelin good",
+//   "Love level FULL",
+//   "Sensing ample love",
+//   "All systems A-OKAY",
+//   "Sheep says you rock!",
+//   "<3<3<3<3<3<3<3<3<3<3",
+//   "<maido + chanchanxd3",
+// };
 
-int health;
+// int msg_health_med_len = 4;
+// char* msg_health_med [] = {
+//   "Love level half full",
+//   "How you doin?",
+//   "Can I get cho number?",
+//   "System functional",
+// };
+
+// int msg_health_low_len = 5;
+// char* msg_health_low [] = {
+//   "DANGER: LOW LOVE",
+//   "Refill needed soon",
+//   "Require assistance",
+//   "Need moar fuel",
+//   "o_O feed me O_o",
+// };
+
+// int msg_alone_len = 6;
+// char* msg_alone [] = {
+//   "Cold here? Or just me",
+//   "Where did you go?",
+//   "Donde esta mi amor?",
+//   "ESPn Link Severed",
+//   "Link not established",
+//   "Connection issues",
+// };
+
+// int msg_stingy_len = 5;
+// char* msg_stingy [] = {
+//   "Don't forget to feed",
+//   "Feelin stingy?",
+//   "Hey! Need to send too",
+//   "Share the love!",
+//   "Sheep sez 'send love'",
+// };
+
+//int health;
 
 // internal stuff
 boolean flash_led_status;
@@ -105,7 +158,7 @@ void setup()   {
   inputString_index =0;
   
   last_screen_update = 0;
-  health = 100;
+  //health = 100;
   this_second = 0;
   
   // setup communication
@@ -138,6 +191,13 @@ void setup()   {
   // read some startup values
   debugio = digitalRead(SW7_PIN);
   current_identity = digitalRead(SW6_PIN);
+
+  // "demo mode" active
+  if (digitalRead(SW5_PIN)) {
+    // decrease thresholds for SHAME_LED and HAPPY_LED
+    age_for_low_tx = 60;
+    age_for_low_rx = 60;
+  }
   
   // init done
   display.setTextSize(2);
@@ -157,6 +217,12 @@ void setup()   {
   display.setCursor(20,55);
   display.println(revID);
   display.display();
+
+  // seed our random number generator (uses pin 5 which is NC)
+  randomSeed(analogRead(5));
+
+  //msg_class = 1;
+  //msg_index = random(msg_health_low_len+1);
   
   delay(5000);
 }
@@ -196,7 +262,7 @@ void loop() {
           switch (inChar) {
             // t = trigger = someone pressed the button on the other device
             case 't':
-               health = 100;
+               //health = 100;
                last_rx_timestamp = this_second;
                beep();
                break; 
@@ -224,7 +290,7 @@ void loop() {
   
   // if we just received a message, handle it.
   if (stringComplete) {
-    health = 100;
+    //health = 100;
     for(int i = 0 ; i < inputString_index; i++) {
       oled_string[i] = inputString[i];
     }
@@ -244,9 +310,9 @@ void loop() {
   
   // update the OLED display once a second (meh doesn't need to be faster)
   if(this_second > last_screen_update + screen_update_freq) {
-    if (health >= 5) {
-      health -= 5; 
-    }
+    // if (health >= 5) {
+    //   health -= 5; 
+    // }
     updateScreen();
   }
 
@@ -278,36 +344,36 @@ void beep() {
   delay(delayms);                    // wait for a delayms ms   
 }
 
-/* Helper function, build an age based on a timestamp */
-String timetoage(unsigned long stamp) {
-  unsigned long h, m, s;
-  unsigned long diff;
-  String age = "";
-  int len = 0;
+// /* Helper function, build an age based on a timestamp */
+// String timetoage(unsigned long stamp) {
+//   unsigned long h, m, s;
+//   unsigned long diff;
+//   String age = "";
+//   int len = 0;
 
-  // lets just store the difference in seconds because who really cares about MS
-  diff = floor((millis() - stamp)/1000);
+//   // lets just store the difference in seconds because who really cares about MS
+//   diff = floor((millis() - stamp)/1000);
 
-  h = floor(diff / (60*60));
-  if( h > 0) {
-    diff -= (h * 60 * 60);
-    age += h;
-    age += "h";
-  }
+//   h = floor(diff / (60*60));
+//   if( h > 0) {
+//     diff -= (h * 60 * 60);
+//     age += h;
+//     age += "h";
+//   }
 
-  m = floor(diff / 60);
-  if (m > 0) {
-    diff -= (m * 60);
-    age += m;
-    age += "m";
-  }
+//   m = floor(diff / 60);
+//   if (m > 0) {
+//     diff -= (m * 60);
+//     age += m;
+//     age += "m";
+//   }
 
-  s = diff;
-  age += s;
-  age += "s";
+//   s = diff;
+//   age += s;
+//   age += "s";
 
-  return age;
-}
+//   return age;
+// }
 
 void updateScreen() {
   // first check wifi
@@ -354,23 +420,25 @@ void updateScreen() {
       display.print(":)");
     }
 
-    // second line = last saw / can't find other person!
+    // second line = last sighting (optional) 
+    // IF haven't seen yet- complain!
+    // IF haven't seen recently- display last sighting!
+    // else shh, the progress bar shows this information
     display.setCursor(0,9);
     if(last_ping_rx_timestamp == 0) {
       display.print("Can't find ");
       display.println(current_identity?"chanchan!":"maido!");
     } else {
-      display.print("Saw ");
-      display.print(current_identity?"her ":"him ");
-      display.print(this_second-last_ping_rx_timestamp);
-      display.println("s ago!");
+      if (!other_person_online) {
+        display.print("Saw ");
+        display.print(current_identity?"her ":"him ");
+        display.print(this_second-last_ping_rx_timestamp);
+        display.println("s ago!");
+      }
     } 
 
     // third line = love age
-    if(last_rx_timestamp == 0) {
-      display.println("");
-    } else {
-      //               0123456789012345678901
+    if(last_rx_timestamp != 0) {
       display.print("Last rx ");
       display.print(this_second-last_rx_timestamp);
       display.println("s ago");
@@ -406,11 +474,17 @@ void updateScreen() {
     digitalWrite(ACK_LED_PIN,0);
   }
 
+  // initiate SHAME_LED when haven't txed in TX_AGE
   if (last_tx_timestamp == 0 || this_second > (last_tx_timestamp + age_for_low_tx)){
     digitalWrite(LED2_PIN,1);
-    digitalWrite(LED1_PIN,0);
   } else{
     digitalWrite(LED2_PIN,0);
+  }
+
+  // initiate HAPPY_LED when have rx'ed in RX_AGE
+  if (last_rx_timestamp == 0 || this_second > (last_rx_timestamp + age_for_low_rx)){
+    digitalWrite(LED1_PIN,0);
+  } else{
     digitalWrite(LED1_PIN,1);
   }
 }
