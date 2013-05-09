@@ -29,6 +29,8 @@
                              Also have LED indicator for long time since tx
                              Also have on screen reflection of ages. 
   05/07/2013  N. McBean   Changed LED1 & LED2 to display happy/stingy.
+  05/08/2013  N. McBean   Ugh! Such limited memory. Todo: use PROGMEM
+        v1.0                for now, reduce strings. 
 
 ******************************************************************/
 
@@ -39,7 +41,7 @@
 #include <Adafruit_SSD1306.h>
 
 /*** debug switches and settings ***/
-String revID = "ver2013-05-06-A";
+String revID = "v1.0";
 int  comm_frequency          = 21;    // how frequently we should ping the other device
 int  screen_update_freq      = 1;     // how frequently should we update the screen
 int  max_age_rx_comm         = 30;    // LED turns off when comm > this timeout
@@ -76,64 +78,15 @@ Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 boolean stringComplete = false;  // whether the string is complete
 unsigned long last_screen_update;
 
-// // internal messages
-// int msg_class; // 1 = high, 2 = med, 3 = low, 4 = alone, 5 = stingy
-// int msg_index;
-// int msg_health_high_len = 7;
-// char* msg_health_high[]={
-//   "Feelin good",
-//   "Love level FULL",
-//   "Sensing ample love",
-//   "All systems A-OKAY",
-//   "Sheep says you rock!",
-//   "<3<3<3<3<3<3<3<3<3<3",
-//   "<maido + chanchanxd3",
-// };
-
-// int msg_health_med_len = 4;
-// char* msg_health_med [] = {
-//   "Love level half full",
-//   "How you doin?",
-//   "Can I get cho number?",
-//   "System functional",
-// };
-
-// int msg_health_low_len = 5;
-// char* msg_health_low [] = {
-//   "DANGER: LOW LOVE",
-//   "Refill needed soon",
-//   "Require assistance",
-//   "Need moar fuel",
-//   "o_O feed me O_o",
-// };
-
-// int msg_alone_len = 6;
-// char* msg_alone [] = {
-//   "Cold here? Or just me",
-//   "Where did you go?",
-//   "Donde esta mi amor?",
-//   "ESPn Link Severed",
-//   "Link not established",
-//   "Connection issues",
-// };
-
-// int msg_stingy_len = 5;
-// char* msg_stingy [] = {
-//   "Don't forget to feed",
-//   "Feelin stingy?",
-//   "Hey! Need to send too",
-//   "Share the love!",
-//   "Sheep sez 'send love'",
-// };
-
-//int health;
-
 // internal stuff
 boolean flash_led_status;
 boolean debugio;
 boolean current_identity; // 0 = c, 1 = n
 boolean receiving_message;
-boolean other_person_online;
+
+// these boolean values are auto-updated and are based on timestamps and timeouts
+boolean other_person_online, stingy_mode, happy_mode;
+
 unsigned long last_tx_timestamp,      last_rx_timestamp;
 unsigned long last_ping_tx_timestamp, last_ping_rx_timestamp;
 unsigned long this_second;
@@ -167,6 +120,8 @@ void setup()   {
   last_ping_tx_timestamp = 0;
   last_ping_rx_timestamp = 0;
   other_person_online = false;
+  stingy_mode = true;
+  happy_mode  = false;
   
   // setup wifi status pin
   pinMode(WIFI_STATUS_PIN, INPUT);
@@ -214,7 +169,7 @@ void setup()   {
     display.println("Hello Christine!");     
   }
 
-  display.setCursor(20,55);
+  display.setCursor(50,55);
   display.println(revID);
   display.display();
 
@@ -307,20 +262,13 @@ void loop() {
     
     beep();
   }
-  
+
   // update the OLED display once a second (meh doesn't need to be faster)
   if(this_second > last_screen_update + screen_update_freq) {
     // if (health >= 5) {
     //   health -= 5; 
     // }
     updateScreen();
-  }
-
-  // update the OTHER PERSON PRESENT indicator
-  if ( (this_second > last_ping_rx_timestamp + max_age_rx_comm) || (last_ping_rx_timestamp == 0)) { 
-    other_person_online = false;
-  } else {
-    other_person_online = true;
   }
 }
 
@@ -380,30 +328,30 @@ void updateScreen() {
   int wifi_not_connected = digitalRead(WIFI_STATUS_PIN);
   
   if( debugio ) {
-    // Blink some LEDs
-    digitalWrite(LED1_PIN, flash_led_status);
-    digitalWrite(LED2_PIN, flash_led_status);
-    digitalWrite(ACK_LED_PIN, flash_led_status);
-    flash_led_status = !flash_led_status;
+    // // Blink some LEDs
+    // digitalWrite(LED1_PIN, flash_led_status);
+    // digitalWrite(LED2_PIN, flash_led_status);
+    // digitalWrite(ACK_LED_PIN, flash_led_status);
+    // flash_led_status = !flash_led_status;
     
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.print("Elapsed: ");
-    display.println(this_second);
+    // display.clearDisplay();
+    // display.setCursor(0,0);
+    // display.print("Elapsed: ");
+    // display.println(this_second);
     
-    display.print("Trig Button: ");
-    display.println(digitalRead(TX_BUT_PIN));
-    display.print("Ack Button : ");
-    display.println(digitalRead(ACK_BUT_PIN));   
+    // display.print("Trig Button: ");
+    // display.println(digitalRead(TX_BUT_PIN));
+    // display.print("Ack Button : ");
+    // display.println(digitalRead(ACK_BUT_PIN));   
     
-    display.print("SW1: ");
-    display.println(digitalRead(SW1_PIN));
-    display.print("SW5: ");
-    display.println(digitalRead(SW5_PIN));
-    display.print("SW6: ");
-    display.println(digitalRead(SW6_PIN));
-    display.print("SW7: ");
-    display.println(digitalRead(SW7_PIN));
+    // display.print("SW1: ");
+    // display.println(digitalRead(SW1_PIN));
+    // display.print("SW5: ");
+    // display.println(digitalRead(SW5_PIN));
+    // display.print("SW6: ");
+    // display.println(digitalRead(SW6_PIN));
+    // display.print("SW7: ");
+    // display.println(digitalRead(SW7_PIN));
   } else {
     // display it
     display.clearDisplay();
@@ -420,31 +368,48 @@ void updateScreen() {
       display.print(":)");
     }
 
+    display.setCursor(0,9);
+    // first line = love age
+    if(last_rx_timestamp != 0) {
+      unsigned long delta = this_second-last_rx_timestamp;
+      display.print("Last rx ");
+      if( delta > 3600) {
+        display.print(delta/3600);
+        display.print('h');
+      } else if (delta > 60) {
+        display.print(delta/60);
+        display.print('m');
+      } else {
+        display.print(delta);
+        display.print('s');
+      }
+      display.println(" ago");
+    }
+
     // second line = last sighting (optional) 
     // IF haven't seen yet- complain!
     // IF haven't seen recently- display last sighting!
     // else shh, the progress bar shows this information
-    display.setCursor(0,9);
     if(last_ping_rx_timestamp == 0) {
       display.print("Can't find ");
       display.println(current_identity?"chanchan!":"maido!");
-    } else {
-      if (!other_person_online) {
+    } else if (!other_person_online) {
         display.print("Saw ");
         display.print(current_identity?"her ":"him ");
         display.print(this_second-last_ping_rx_timestamp);
         display.println("s ago!");
+    } else {
+      if(happy_mode && stingy_mode && other_person_online ) {
+        display.println("All good-Share love!");
+      } else if (happy_mode) {
+        display.println("Sensing ample love!");
+      } else {
+        display.println("Fuel nearing empty!");
       }
-    } 
-
-    // third line = love age
-    if(last_rx_timestamp != 0) {
-      display.print("Last rx ");
-      display.print(this_second-last_rx_timestamp);
-      display.println("s ago");
     }
 
     // 4th line message if there is one
+    display.setCursor(0,40);
     display.println(oled_string);
     
     display.drawRect(5,59,118,5,WHITE);
@@ -467,35 +432,43 @@ void updateScreen() {
   display.display();
   last_screen_update = this_second;
 
-  // not really the screen, but this is called less frequently
-  if (other_person_online) {
-    digitalWrite(ACK_LED_PIN,1);
-  } else {
+  /*** update boolean values ***/
+  // update the OTHER PERSON PRESENT indicator
+  if ( (this_second > last_ping_rx_timestamp + max_age_rx_comm) || (last_ping_rx_timestamp == 0)) { 
+    other_person_online = false;
     digitalWrite(ACK_LED_PIN,0);
+  } else {
+    other_person_online = true;
+    digitalWrite(ACK_LED_PIN,1);
   }
 
   // initiate SHAME_LED when haven't txed in TX_AGE
-  if (last_tx_timestamp == 0 || this_second > (last_tx_timestamp + age_for_low_tx)){
+  if( (last_tx_timestamp == 0) || this_second > (last_tx_timestamp + age_for_low_tx)) {
+    stingy_mode = true;  
     digitalWrite(LED2_PIN,1);
-  } else{
+  } else {
+    stingy_mode = false;
     digitalWrite(LED2_PIN,0);
   }
 
+  
   // initiate HAPPY_LED when have rx'ed in RX_AGE
-  if (last_rx_timestamp == 0 || this_second > (last_rx_timestamp + age_for_low_rx)){
+  if ((last_rx_timestamp == 0) || this_second > (last_rx_timestamp + age_for_low_rx)) {
+    happy_mode = false;
     digitalWrite(LED1_PIN,0);
-  } else{
+  } else {
+    happy_mode = true;
     digitalWrite(LED1_PIN,1);
-  }
+  }  
 }
 
-void error(String message) {
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  display.println("Fatal error");
-  display.println(message);
+// void error(String message) {
+//   display.clearDisplay();
+//   display.setTextSize(1);
+//   display.setCursor(0,0);
+//   display.println("Fatal error");
+//   display.println(message);
   
-  // freeze the arduino so it doesn't try to do anything else
-  while (1) {}
-}
+//   // freeze the arduino so it doesn't try to do anything else
+//   while (1) {}
+// }
