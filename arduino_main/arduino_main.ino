@@ -1,8 +1,10 @@
 /*********************************************************************
-  M. A. I. D. O. (L)
-  mechanically assisted inventive device offering love
+  ESPn
+  extrasensory perception via a network
   
-  Written by Nate McBean for Christine Chan!
+  utilizing an arduino pro, a 128x64 OLED SPI display,
+  an electric imp (and electric imp breakout board) and some accessories
+ 
   
   Revision Log
   Date       |Author     |Description
@@ -21,7 +23,7 @@
                             displays on screen when receive [], otherwise
                             handle each character individually.
                             Initial communication works with button press
-                            TODO: debounce? needed?
+                            TODO: debounce? needed? EDIT: nope. slow 'nuf
   05/06/2013  N. McBean   Changed string management to be char arrays.
                              i think my memory was getting garbage collected
                              and all messed up! boo! This works mostly though
@@ -31,6 +33,8 @@
   05/07/2013  N. McBean   Changed LED1 & LED2 to display happy/stingy.
   05/08/2013  N. McBean   Ugh! Such limited memory. Todo: use PROGMEM
         v1.0                for now, reduce strings. 
+  05/09/2013  N. McBean   Added some extra clearing triggers.
+        v1.1
 
 ******************************************************************/
 
@@ -41,7 +45,7 @@
 #include <Adafruit_SSD1306.h>
 
 /*** debug switches and settings ***/
-String revID = "v1.0";
+String revID = "v1.1";
 int  comm_frequency          = 21;    // how frequently we should ping the other device
 int  screen_update_freq      = 1;     // how frequently should we update the screen
 int  max_age_rx_comm         = 30;    // LED turns off when comm > this timeout
@@ -223,8 +227,14 @@ void loop() {
                break; 
             // s = status = automatic ping from the other device
             case 's':
-               last_ping_rx_timestamp = this_second;
-               break;
+              last_ping_rx_timestamp = this_second;
+              break;
+            case 'x':
+              last_ping_rx_timestamp = 0;
+              break;
+            case 'z':
+              last_ping_tx_timestamp = 0;
+              break;
           }
         } 
     }
@@ -292,41 +302,11 @@ void beep() {
   delay(delayms);                    // wait for a delayms ms   
 }
 
-// /* Helper function, build an age based on a timestamp */
-// String timetoage(unsigned long stamp) {
-//   unsigned long h, m, s;
-//   unsigned long diff;
-//   String age = "";
-//   int len = 0;
-
-//   // lets just store the difference in seconds because who really cares about MS
-//   diff = floor((millis() - stamp)/1000);
-
-//   h = floor(diff / (60*60));
-//   if( h > 0) {
-//     diff -= (h * 60 * 60);
-//     age += h;
-//     age += "h";
-//   }
-
-//   m = floor(diff / 60);
-//   if (m > 0) {
-//     diff -= (m * 60);
-//     age += m;
-//     age += "m";
-//   }
-
-//   s = diff;
-//   age += s;
-//   age += "s";
-
-//   return age;
-// }
-
 void updateScreen() {
   // first check wifi
   int wifi_not_connected = digitalRead(WIFI_STATUS_PIN);
   
+  // temporarily comment out this code to save some valuable SRAM
   if( debugio ) {
     // // Blink some LEDs
     // digitalWrite(LED1_PIN, flash_led_status);
@@ -461,14 +441,3 @@ void updateScreen() {
     digitalWrite(LED1_PIN,1);
   }  
 }
-
-// void error(String message) {
-//   display.clearDisplay();
-//   display.setTextSize(1);
-//   display.setCursor(0,0);
-//   display.println("Fatal error");
-//   display.println(message);
-  
-//   // freeze the arduino so it doesn't try to do anything else
-//   while (1) {}
-// }

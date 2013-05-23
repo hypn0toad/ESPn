@@ -1,19 +1,21 @@
 /*********************************************************************
-  M. A. I. D. O. (L)
-  mechanically assisted inventive device offering love
+  ESPn
+  extrasensory perception via a network
   
-  Written by Nate McBean for Christine Chan!
+  utilizing an arduino pro, a 128x64 OLED SPI display,
+  an electric imp (and electric imp breakout board) and some accessories
+ 
   This is the IMP code
   
   Based off of "Transmit data between UART and Input/OutputPorts on 
   the impee" by: Jim Lindblom SparkFun Electronics license: BeerWare
   
-  PIN1- nc
-  PIN2- nc
+  PIN1- switch 4 (doesn't work)
+  PIN2- wifi status LED (output), also connected to arduino input
   PIN5- Imp Transmit (connect to Rx of arduino)
   PIN7- Imp Receive  (connect to Tx of arduino)
-  PIN8- nc  
-  PIN9- LED Tx (on when receive from internet and tx to arduino)
+  PIN8- switch 2 (works great)  
+  PIN9- pad (nc)
   
   
   Revision Log
@@ -24,10 +26,8 @@
                           sleeping (was sleeping after 15m)
   04/07/2013  N. McBean   Changed to use callback instead of polling
   04/29/2013  N. McBean   Testing other IO for switches.
+  05/22/2013  N. McBean   Cleanup
 ******************************************************************/
-
-local rxLEDToggle = 1;  // These variables keep track of rx/tx LED toggling status
-local txLEDToggle = 1;
 
 // impeeIn will override the InputPort class. 
 // Whenever data is received to the impee, we'll jump into the set(c) function defined within
@@ -50,6 +50,9 @@ local impeeInput = impeeIn();  // assign impeeIn class to the impeeInput
 local impeeOutput = OutputPort("UART In", "string");  // set impeeOutput as a string
 local sw2 = OutputPort("SW2","integer");
 
+// configure the UART to call the readserial() function when it gets data
+// callbacks are much better than polling!
+// i couldn't get the slower uarts to quickly work. but this seems fine, so meh.
 function initUart()
 {
     hardware.configure(UART_57);    // Using UART on pins 5 and 7
@@ -67,18 +70,9 @@ function switched() {
 
 function initPins()
 {
-//    // LEDs are on pins 8 and 9 on the imp Shield
-//    // They're both active low, so writing the pin a 1 will turn the LED off
-//    hardware.pin8.configure(DIGITAL_OUT_OD_PULLUP);
-//    hardware.pin9.configure(DIGITAL_OUT_OD_PULLUP);
-//    hardware.pin8.write(1);
-//    hardware.pin9.write(1);
-    
     // LED for wifi status
     hardware.pin2.configure(DIGITAL_OUT_OD_PULLUP);
-    hardware.pin2.write(1);
-    
-    
+    hardware.pin2.write(1);  // 1 = off, 0 = on
 }
 
 // If there is data in the UART57 buffer, this function will be called and we will
@@ -95,6 +89,8 @@ function readserial()
     
 }
 
+// sometimes the imp likes to go to sleep. this stops that from happening
+// i probably don't need this since i have so much other code running, but i've grown attached to it by now
 function watchdog() {
   imp.wakeup(5*60, watchdog);
   server.log("watchdog");
@@ -108,13 +104,13 @@ function checkWifi() {
   // http://devwiki.electricimp.com/doku.php?id=electricimpapi:imp:rssi
   if( imp.rssi() > -67) {
     // wifi is good
-    hardware.pin2.write(0);
+    hardware.pin2.write(0); // 0 = on
     // don't bother checking for another minute almost
     imp.wakeup(58,checkWifi);
     //server.log("Wifi good");
   } else {
     // wifi is bad
-    hardware.pin2.write(1);
+    hardware.pin2.write(1); // 1 = off
     // check in a few seconds
     imp.wakeup(5,checkWifi);
     //server.log("Wifi bad");
@@ -133,8 +129,5 @@ initUart(); // Initialize the UART, called just once
 initPins();
 watchdog();
 checkWifi();
-// From here, two main functions are at play:
-//      1. We'll be calling pollUart every 10us. If data is sent from the UART, we'll send out out of the impee.
-//      2. If data is sent into the impee, we'll jump into the set function in the InputPort.
-//
+
 // The end

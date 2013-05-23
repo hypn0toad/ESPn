@@ -1,8 +1,10 @@
 /*********************************************************************
-  M. A. I. D. O. (L)
-  mechanically assisted inventive device offering love
+  ESPn
+  extrasensory perception via a network
   
-  Written by Nate McBean for Christine Chan!
+  utilizing an arduino pro, a 128x64 OLED SPI display,
+  an electric imp (and electric imp breakout board) and some accessories
+ 
   
   Revision Log
   Date       |Author     |Description
