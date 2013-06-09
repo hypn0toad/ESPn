@@ -1,0 +1,22 @@
+Here is a list of current issues with the design / possible improvements currently being considered. Really there weren't any huge issues, everything suprisingly worked without any sort of jumper wires or reprogramming.
+
+PART SELECTION
+- IMPROVEMENT: It would be nice to get rid of the April/Breakout Imp board. Not worth it to design custom for 2, but there arent many components that would be needed.
+
+MECHANICAL DESIGN
+- DEFECT: Holes for the OLED display are all incorrect. First off I borked the dimensions of the display and it unintentionally hangs off the bottom of the board. Secondly, the holes are the right size, but are in no way in the right space. It would be much better if these aligned. There needs to be some sort of support at the bottom. Instead of increasing board size, I would probably just not try to align the holes, and put a couple at the footer to add support for the display.
+
+ELECTRCIAL DESIGN
+- DEFECT: Red ButtonLED is much brighter than the Green ButtonLED. I suspect this is because of two reasons. First off, the Red LED is being driven via current sinking so it might be able to get more current. Secondly, I matched the resistances for the two LEDs even though they're different wavelengths. Different resistance values would probably also fix the mismatch but honestly it is more nitpicky and fine to deal with.
+- DEFECT: Switch 4 doesn't correctly communicate with the Imp. I suspect this is a problem with the imp where that input isn't as flexible but the electronics are similar to that of switch 2, so I don't think its a big deal (especially since I'm not using the second switch).
+- ANNOYANCE: It would be nice to have a power switch to disconnect all power from (1) the wall supply and (2) the arduino. Currently, I have to unplug the Imp when reprogramming the Arduino over the FTDI cable (it will try to draw too much current and will keep rebooting the board)
+
+SOFTWARE
+- DEFECT: TODO- fix handling of overflow for millis(). Right now I am betting on a power cycle every 40 days.
+- IMPROVEMENT: use Progmem/EEPROM to store list of messages. That way I can have more variety and not run out of memory and get glitchy strings. I can also save settings between power cycles.
+- IMPROVEMENT: expand to a second message type {} used for secondary string display to give variety. This would allow the internet/imp to do string management and would not make me have to deal with idiotic memory limitations of a microcontroller.
+- IMPROVEMENT: loading bar at startup. didn't do this because of stupid string limitations
+- IMPROVEMENT: change message triggering to interrupt functionality (thats why i picked pins 2 and 3 after all, but everything seemed to work with my lazy method)
+- IMPROVEMENT: add phone interface
+- IMPROVEMENT: Read receipt? with green button?
+- IMPROVEMENT: Offline mode- as much as i like the electric imp, i have to be able to survive without the internet for futureproofing
